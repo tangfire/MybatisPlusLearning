@@ -137,7 +137,7 @@ INSERT INTO votedb.user (id, user_name, password, phone, email, age, role, creat
 
 如果你想要查看到具体的sql语句的话你可以使用yml配置开启日志
 
-### yml配置文件配置日志
+yml配置文件配置日志
 
 ```yml
 #配置日志
