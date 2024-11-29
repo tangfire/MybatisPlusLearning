@@ -28,7 +28,6 @@
     </scm>
     <properties>
         <java.version>23</java.version>
-        <mybatis-plus.version>3.5.7</mybatis-plus.version> <!-- mybatis增强 orm 框架 -->
     </properties>
     <dependencies>
         <dependency>
@@ -55,13 +54,13 @@
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
-            <version>${mybatis-plus.version}</version>
+            <version>3.5.7</version>
         </dependency>
         <!-- 代码生成器 -->
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-generator</artifactId>
-            <version>${mybatis-plus.version}</version>
+            <version>3.5.7</version>
         </dependency>
         <!--  mysql 依赖 版本由继承的 spring-boot-starter-parent 控制，也可以自己指定  -->
         <dependency>
@@ -82,6 +81,14 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/p6spy/p6spy -->
+        <dependency>
+            <groupId>p6spy</groupId>
+            <artifactId>p6spy</artifactId>
+            <version>3.9.1</version>
+        </dependency>
+
     </dependencies>
 
     <build>

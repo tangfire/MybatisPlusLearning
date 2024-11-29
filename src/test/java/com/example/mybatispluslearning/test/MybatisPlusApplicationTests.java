@@ -1,19 +1,27 @@
 package com.example.mybatispluslearning.test;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.mybatispluslearning.entity.User;
 import com.example.mybatispluslearning.mapper.UserMapper;
+import com.example.mybatispluslearning.mapper.UserMapper01;
+import org.apache.ibatis.session.ResultHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.io.Serializable;
+import java.util.*;
 
 @SpringBootTest
 class MybatisPlusApplicationTests {
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private UserMapper01 userMapper01;
 
     /**
      * 全部查询
@@ -54,7 +62,7 @@ class MybatisPlusApplicationTests {
      * 删除操作
      */
     @Test
-    void deleteTest() {
+    void deleteTest01() {
         User user = new User();
         user.setId(1380808280388952067L);
         user.setUserName("tangfire:update version");
@@ -110,6 +118,63 @@ class MybatisPlusApplicationTests {
         map.put("age",20);
         List<User> users = userMapper.selectByMap(map);
         System.out.println(users);
+    }
+
+    /**
+     *分页查询
+     */
+    @Test
+    void selectByPageTest() {
+        // 两个参数：current的值默认是1，从1开始，不是0,指的是当前的页。size是每一页的条数。
+        Page<User> page = new Page<>(2,3);
+        Page<User> userPage = userMapper.selectPage(page, null);
+        System.out.println("Records = "+userPage.getRecords());
+        System.out.println("Pages = "+userPage.getPages());
+        //page的其他方法
+        System.out.println("当前页：" + page.getCurrent());
+        System.out.println("总页数：" + page.getPages());
+        System.out.println("记录数：" + page.getTotal());
+        System.out.println("是否有上一页：" + page.hasPrevious());
+        System.out.println("是否有下一页：" + page.hasNext());
+    }
+
+    @Test
+    void deleteTest02() {
+        userMapper.deleteById(4L);
+        //批量删除
+        userMapper.deleteBatchIds(Arrays.asList(1L,2L));
+        //通过map删除
+        Map<String, Object> map = new HashMap<>();
+        map.put("name","tangfire");
+        userMapper.deleteByMap(map);
+    }
+
+    /**
+     * 逻辑删除
+     * 查看日志输出可以看到，delete的语句变成了update语句，实质上就是update（修改）语句，将deleted字段从0修改为1以yml的配置作为参照
+     */
+    @Test
+    void logicDeleteTest03() {
+        userMapper.deleteById(1380808280388952066L);
+    }
+
+    /**
+     * 模糊查询
+     */
+    @Test
+    void fuzzyQueryTest() {
+        QueryWrapper<User> wrapper = new QueryWrapper<>();    //条件构造器
+        wrapper.likeRight("user_name","zh%");   //也就是 name  like 'zh%'
+        List<Object> users = userMapper.selectObjs(wrapper);
+        System.out.println(users);
+    }
+
+    /**
+     * 测试xml文件
+     */
+    @Test
+    void xmlTest() {
+        System.out.println(userMapper01.getUserName(1380808280388952068L));
     }
  
 }

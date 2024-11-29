@@ -67,4 +67,8 @@ public class User implements Serializable {
 
     @Version //乐观锁注解
     private int version;
+
+//    @TableLogic //逻辑删除
+//    在application.yml 已经配置了全局逻辑删除的实体字段名
+    private Integer deleted;
 }
