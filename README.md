@@ -5,6 +5,8 @@
 
 [SpringBoot3 + MyBatisPlus 快速整合](https://blog.csdn.net/qq_34709175/article/details/142982502)
 
+[超详细超全面的MyBatisPlus的所有使用方法](https://blog.csdn.net/Bb15070047748/article/details/129212543)
+
 
 # 测试样例
 
@@ -639,6 +641,42 @@ public interface UserMapper01 extends BaseMapper<User> {
         System.out.println(userMapper01.getUserName(1380808280388952068L));
     }
 ```
+
+
+------------------------------------
+
+# MybatisPlus的使用
+
+## 创建测试表
+
+```sql
+DROP TABLE IF EXISTS person;
+
+CREATE TABLE `person` (
+  `id` bigint(20) NOT NULL COMMENT '主键ID',
+  `name` varchar(30) DEFAULT NULL COMMENT '姓名',
+  `sex` char(1) DEFAULT NULL COMMENT '性别 0:男 1:女',
+  `age` int(11) DEFAULT NULL COMMENT '年龄',
+  `birthday` date DEFAULT NULL COMMENT '生日',
+  PRIMARY KEY (`id`)
+);
+
+
+INSERT INTO `person` VALUES (1, 'Jone', '1', 27, '2001-10-04');
+INSERT INTO `person` VALUES (2, 'Jack', '0', 20, '1999-10-04');
+INSERT INTO `person` VALUES (3, 'Tom', '1', 28, '1996-08-12');
+INSERT INTO `person` VALUES (4, 'Sandy', '1', 21, '2001-10-04');
+INSERT INTO `person` VALUES (5, 'Billie', '0', 24, '1992-09-07');
+INSERT INTO `person` VALUES (6, 'Jackson', '0', 18, '1996-08-12');
+INSERT INTO `person` VALUES (7, 'Hardy', '1', 25, '1992-09-07');
+INSERT INTO `person` VALUES (8, 'Rose', '1', 21, '1992-09-07');
+INSERT INTO `person` VALUES (9, 'June', '0', 28, '1992-09-07');
+INSERT INTO `person` VALUES (10, 'Aidan', '0', 17, '2001-10-04');
+
+```
+
+## 
+
 
 
 

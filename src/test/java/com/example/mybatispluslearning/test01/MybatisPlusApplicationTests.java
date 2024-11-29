@@ -1,18 +1,14 @@
-package com.example.mybatispluslearning.test;
+package com.example.mybatispluslearning.test01;
 
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.mybatispluslearning.entity.User;
 import com.example.mybatispluslearning.mapper.UserMapper;
 import com.example.mybatispluslearning.mapper.UserMapper01;
-import org.apache.ibatis.session.ResultHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.io.Serializable;
 import java.util.*;
 
 @SpringBootTest
