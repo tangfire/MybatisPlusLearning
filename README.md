@@ -680,7 +680,7 @@ INSERT INTO `person` VALUES (10, 'Aidan', '0', 17, '2001-10-04');
 在MyBatis Plus中，我们编写的Mapper接口都继承与MyBatis Plus提供的BaseMapper接口，BaseMapper接口包含了MyBatis Plus帮我们提供操作数据库的一系列方法；
 
 
-### 示例
+### 示例:test02/Demo01
 
 ```java
 package com.example.mybatispluslearning.test02;
@@ -815,6 +815,24 @@ public class Demo01 {
 
 
 ## Wrapper查询
+
+通过BaseMapper提供的一些方法我们可以完成一些基本的CRUD，但无法完成复杂条件的查询；对于复杂条件的查询，MyBatis Plus提供了Wrapper接口来处理；
+
+Wrapper是MyBatis Plus提供的一个条件构造器，主要用于构建一系列条件，当Wrapper构建完成后，可以使用Wrapper中的条件进行查询、修改、删除等操作；
+
+### 创建Wrapper对象
+
+- Wrappers静态方法:
+  - `public static <T> QueryWrapper<T> query()`
+- 通过QueryWrapper对象的构造方法:
+  - `public QueryWrapper()` 
+
+## 示例:test02/Demo02
+
+```java
+
+
+```
 
 
 
