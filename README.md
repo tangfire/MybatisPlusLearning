@@ -135,6 +135,7 @@ INSERT INTO votedb.user (id, user_name, password, phone, email, age, role, creat
 
 ```
 
+
 ## 具体的sql语句
 
 如果你想要查看到具体的sql语句的话你可以使用yml配置开启日志
@@ -229,6 +230,10 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
 }
 
 ```
+
+
+
+
 
 
 ## 乐观锁和悲观锁
@@ -642,10 +647,199 @@ public interface UserMapper01 extends BaseMapper<User> {
     }
 ```
 
+------------------------------------
+
+
+# MybatisPlus的使用
+
+
+## MyBatis-Plus 能够知道操作哪张表，通常是基于以下几个机制：
+
+---
+
+### 1. **实体类与表的映射**
+MyBatis-Plus 是一个基于 MyBatis 的增强工具，使用实体类和数据库表之间的映射来确定目标表。
+
+- **实体类与表的默认映射规则**：
+  MyBatis-Plus 默认会将实体类名转化为数据库表名：
+  - 实体类名 **驼峰命名** -> 表名 **下划线命名**。
+  - 例如，`UserInfo` 实体类会映射到 `user_info` 表。
+
+- **通过注解指定表名**：
+  如果表名和默认映射规则不一致，可以使用 `@TableName` 注解指定表名：
+  ```java
+  @TableName("custom_table_name")
+  public class UserInfo {
+      private Long id;
+      private String name;
+  }
+  ```
+
+---
+
+### 2. **Mapper 接口继承 BaseMapper**
+在 MyBatis-Plus 中，Mapper 接口通常继承自 `BaseMapper<T>`，其中 `T` 是实体类类型。
+
+- **BaseMapper** 自动绑定实体类的表名：
+  - 通过 `T` 知道当前操作的实体类。
+  - 根据实体类与表的映射关系，确定目标表。
+
+示例代码：
+```java
+public interface UserMapper extends BaseMapper<UserInfo> {
+    // UserInfo 实体类默认映射到 user_info 表
+}
+```
+
+---
+
+### 3. **全局配置的表名策略**
+MyBatis-Plus 提供了全局配置选项，可以影响表名映射策略：
+
+- **下划线命名规则**：
+  默认启用驼峰转下划线规则，可以通过以下配置调整：
+  ```java
+  GlobalConfig globalConfig = new GlobalConfig();
+  globalConfig.setDbConfig(new GlobalConfig.DbConfig()
+      .setTableUnderline(true)); // 启用下划线命名
+  ```
+
+- **自定义表名策略**：
+  如果需要完全自定义映射规则，可以实现自己的 `INameConvert` 接口：
+  ```java
+  public class CustomNameConvert implements INameConvert {
+      @Override
+      public String entityNameConvert(Class<?> entityClass) {
+          return "prefix_" + entityClass.getSimpleName().toLowerCase();
+      }
+  }
+  ```
+
+---
+
+### 4. **动态 SQL**
+MyBatis-Plus 提供了动态 SQL 能力，可以在运行时指定表名。
+
+示例：
+```java
+String tableName = "dynamic_table";
+QueryWrapper<UserInfo> wrapper = new QueryWrapper<>();
+wrapper.eq("status", 1);
+List<UserInfo> list = baseMapper.selectList(wrapper);
+
+// 动态 SQL 中指定表名
+DynamicTableNameParser parser = new DynamicTableNameParser();
+parser.setTableNameHandler((metaObject, sql, tableNameParam) -> tableName);
+```
+
+这段代码是一个动态表名的使用示例，以下是逐步解析和解释：
+
+---
+
+### 1. **动态表名的背景**
+在某些情况下，数据库表名可能是动态变化的，比如分表场景（`user_2024`、`user_2023` 等）。MyBatis-Plus 提供了动态表名功能，可以在运行时决定具体操作的表。
+
+---
+
+### 2. **代码分解和解释**
+
+#### **(1) 定义目标表名**
+```java
+String tableName = "dynamic_table";
+```
+- 定义一个动态表名为 `"dynamic_table"`。
+- 这可以是从代码中计算出的表名，也可以从配置文件、上下文、参数中获取。
+
+---
+
+#### **(2) 构造查询条件**
+```java
+QueryWrapper<UserInfo> wrapper = new QueryWrapper<>();
+wrapper.eq("status", 1);
+```
+- **`QueryWrapper<UserInfo>`**：
+  - 是 MyBatis-Plus 提供的一个条件构造器，用于动态生成 SQL 查询条件。
+  - 在这里，`wrapper.eq("status", 1)` 表示添加一个等值条件：`WHERE status = 1`。
+
+---
+
+#### **(3) 执行查询**
+```java
+List<UserInfo> list = baseMapper.selectList(wrapper);
+```
+- **`baseMapper.selectList(wrapper)`**：
+  - `baseMapper` 是继承自 `BaseMapper<UserInfo>` 的 DAO 层接口。
+  - 调用 `selectList(wrapper)` 会执行查询，返回符合条件的结果列表。
+
+---
+
+#### **(4) 动态表名处理器**
+```java
+DynamicTableNameParser parser = new DynamicTableNameParser();
+parser.setTableNameHandler((metaObject, sql, tableNameParam) -> tableName);
+```
+- **`DynamicTableNameParser`**：
+  - 是 MyBatis-Plus 提供的一个类，用于动态解析 SQL 中的表名。
+  - 通过 **表名处理器** 来动态指定表名。
+
+- **`setTableNameHandler`**：
+  - 注册一个表名处理器，用于动态生成表名。
+  - 处理器接收三个参数：
+    1. **`metaObject`**：元数据对象，包含当前操作的一些上下文信息。
+    2. **`sql`**：当前执行的 SQL 语句模板（尚未解析完成）。
+    3. **`tableNameParam`**：表名参数（通常是 SQL 中的原始表名）。
+  - 返回值：`tableName`，即动态表名。
+
+- 在这个例子中，处理器简单地返回了固定表名 `"dynamic_table"`，但在实际应用中，可以根据上下文动态生成表名。
+
+---
+
+### 3. **工作流程**
+1. **表名解析**：
+- 当 MyBatis-Plus 执行 SQL 时，`DynamicTableNameParser` 会捕获 SQL 中的表名。
+- 表名解析器 (`setTableNameHandler`) 会动态返回目标表名（这里是 `"dynamic_table"`）。
+
+2. **动态 SQL 生成**：
+- 替换掉原始表名，生成包含动态表名的 SQL。
+
+3. **执行 SQL**：
+- 使用动态表名的 SQL 语句发送到数据库，执行并返回结果。
+
+---
+
+### 4. **示例场景**
+假设数据库中有多张类似的分表：
+- `user_2023`
+- `user_2024`
+- `user_2025`
+
+我们可以根据业务逻辑动态设置目标表名：
+```java
+String tableName = "user_" + getCurrentYear();  // 动态获取年份
+parser.setTableNameHandler((metaObject, sql, tableNameParam) -> tableName);
+```
+这里，`getCurrentYear()` 返回当前年份，表名会根据年份变化。
+
+---
+
+### 总结
+这段代码通过 `DynamicTableNameParser` 和表名处理器，实现了动态修改 SQL 中表名的能力，适用于分表、动态表名等场景。
+
+
+---
+
+### 总结
+MyBatis-Plus 能自动知道操作的表名，主要依赖以下机制：
+1. 实体类名和表名的映射（驼峰转下划线）。
+2. `@TableName` 注解手动指定表名。
+3. `BaseMapper<T>` 提供自动绑定功能。
+4. 全局配置和动态 SQL 提供灵活扩展支持。
+
+如果没有显式指定表名，MyBatis-Plus 默认会按照实体类的名字推导表名。
 
 ------------------------------------
 
-# MybatisPlus的使用
+
 
 ## 创建测试表
 
@@ -799,15 +993,7 @@ public class Demo01 {
 
 
     }
-
-
-
-
-
-
-
-
-
+    
 }
 
 
@@ -827,12 +1013,222 @@ Wrapper是MyBatis Plus提供的一个条件构造器，主要用于构建一系�
 - 通过QueryWrapper对象的构造方法:
   - `public QueryWrapper()` 
 
-## 示例:test02/Demo02
+#### 示例:test02/Demo02
 
 ```java
-
+/**
+     * QueryMapper的创建
+     * select id,name,age,email from user
+     */
+    @Test
+    public void test01(){
+        // 创建QueryMapper,默认情况下查询所有数据
+        QueryWrapper<Person> queryWrapper = new QueryWrapper<>();
+        QueryWrapper<Person> queryWrapper1 = Wrappers.query();
+        List<Person> list = personMapper.selectList(queryWrapper);
+        list.forEach(System.out::println);
+        System.out.println("-----------------------------------");
+        List<Person> list1 = personMapper.selectList(queryWrapper1);
+        list1.forEach(System.out::println);
+    }
 
 ```
+
+### 基本方法的使用
+
+#### 示例:test02/Demo02
+
+```java
+/**
+     * 基本方法的使用
+     */
+    @Test
+    public void test02(){
+        QueryWrapper<Person> wrapper = new QueryWrapper<>();
+//        QueryWrapper<Person> queryWrapper1 = Wrappers.query();
+
+        String name = "Fire";
+        wrapper.eq("name",name);
+        List<Person> list = personMapper.selectList(wrapper);
+        list.forEach(System.out::println);
+
+        // name != 'Jack'
+//        wrapper.ne("name","Jack");
+
+        // age > 20
+//        wrapper.gt("age",20);
+
+        // age < 20
+//        wrapper.lt("age",20);
+
+        // age=20
+//        wrapper.eq("age",20);
+
+        // age between 20 and 24
+//        wrapper.between("age",20,24);
+
+        // age not between 20 and 24
+//        wrapper.notBetween("age",20,24);
+
+        // name like "%J%"          自动拼接左右的%
+//        wrapper.like("name","J");
+
+        // name not like "%J%"
+//        wrapper.notLike("name","J");
+
+        // name like "%J"
+//        wrapper.likeLeft("name","J");
+
+        // name like 'J%'
+//        wrapper.likeRight("name","J");
+
+        // name is null
+//        wrapper.isNull("name");
+
+        // name is not null
+//        wrapper.isNotNull("name");
+
+        // name in ('Jack','Tom','Jone')
+//        wrapper.in("name","Jack","Tom","Jone");
+
+        // name not in ('Jack','Tom','Jone')
+//        wrapper.notIn("name","Jack","Tom","Jone");
+
+    }
+
+```
+
+
+### 子查询
+
+#### 示例:test02/Demo02
+
+```java
+/**
+     * 子查询
+     * name in (select name from user where age > 21)
+     * name not in (select name from user where age > 21)
+     */
+    @Test
+    public void test03(){
+        QueryWrapper<Person> wrapper = new QueryWrapper<>();
+        wrapper.inSql("name","select name from person where age > 21");
+
+//        wrapper.notInSql("name","select name from person where age > 21");
+        List<Person> list = personMapper.selectList(wrapper);
+        list.forEach(System.out::println);
+    }
+
+```
+
+### 分组与排序
+
+
+通过Wrapper.query()构建的查询字段默认是表中的所有字段，因此在这种情况下分组是没有意义的，分组具体的用法我们后面再详细介绍；
+
+#### 示例:test02/Demo02
+
+```java
+/**
+     * 分组
+     */
+    @Test
+    public void test04(){
+        QueryWrapper<Person> wrapper = Wrappers.query();
+
+        wrapper.groupBy("sex");
+        List<Person> list = personMapper.selectList(wrapper);
+        list.forEach(System.out::println);
+    }
+
+    /**
+     * having操作
+     */
+    @Test
+    public void test05() {
+
+        //  创建wrapper对象
+        QueryWrapper<Person> wrapper = Wrappers.query();
+
+        // group by sex having sex = 0
+        wrapper.groupBy("sex");
+        wrapper.having("sex", "0");
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+    /**
+     * 排序
+     */
+    @Test
+    public void test06() {
+        //  创建wrapper对象
+        QueryWrapper<Person> wrapper = Wrappers.query();
+
+        /**
+         * 参数1: 是否是Asc排序(升序), true : asc排序, false: desc排序
+         * 参数2: 排序的字段
+         */
+        wrapper.orderByAsc("age");		// order by age asc
+
+//        wrapper.orderByDesc("age");		// order by age desc
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+```
+
+
+### 多条件的拼接
+
+Wrapper对象在调用每一个方法时都会返回当前对象（Wrapper），这样可以很好的方便我们链式编程；另外MyBatis Plus在拼接多个条件时默认使用and拼接，如果需要使用or，那么需要显示的调用or()方法；
+
+```java
+/**
+     * and拼接条件
+     */
+    @Test
+    public void test07(){
+        QueryWrapper<Person> wrapper = Wrappers.query();
+        wrapper.like("name","%i%")
+                .lt("age",20)
+                .eq("sex",0);
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+
+    /**
+     * or拼接条件
+     */
+    @Test
+    public void test08(){
+        QueryWrapper<Person> wrapper = Wrappers.query();
+
+        wrapper.like("name","%i%")
+                .or()
+                .lt("age",20)
+                .eq("sex",0);
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+```
+
+
+### Wrapper的其他方法
+
+
+
+
+
+
+
+
 
 
 
