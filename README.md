@@ -1222,6 +1222,298 @@ Wrapper对象在调用每一个方法时都会返回当前对象（Wrapper），
 
 ### Wrapper的其他方法
 
+#### 示例:test02/Demo02
+
+```java
+ /**
+     * and方法
+     * 用于拼接一个其他的整体条件
+     * 生成的SQL为: age < ? and (sex = ? or name like ?)
+     */
+    @Test
+    public void test09(){
+        QueryWrapper<Person> wrapper = Wrappers.query();
+        wrapper.lt("age",20);
+        wrapper.and(new Consumer<QueryWrapper<Person>>() {
+            @Override
+            public void accept(QueryWrapper<Person> personQueryWrapper) {
+                personQueryWrapper.eq("sex",0)
+                        .or()
+                        .like("name","%i%");
+            }
+        });
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+
+    /**
+     * func方法: 用于多条件的拼接
+     * 生成的SQL语句: age < ? and name like ? and sex = ?
+     */
+    @Test
+    public void test10(){
+        QueryWrapper<Person> wrapper = Wrappers.query();
+        wrapper.lt("age",21);
+        wrapper.func(new Consumer<QueryWrapper<Person>>() {
+            @Override
+            public void accept(QueryWrapper<Person> personQueryWrapper) {
+                personQueryWrapper.like("name","%i");
+                personQueryWrapper.eq("sex",0);
+            }
+        });
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+    /**
+     * nested方法
+     * 等价于and方法
+     * 生成的SQL语句: id = ? and (name like ? or age > ?)
+     */
+    @Test
+    public void test11(){
+        QueryWrapper<Person> wrapper = Wrappers.query();
+        // nested()等价于and方法()
+        wrapper.eq("id",1);
+        wrapper.nested(new Consumer<QueryWrapper<Person>>() {
+            @Override
+            public void accept(QueryWrapper<Person> personQueryWrapper) {
+                personQueryWrapper.like("name","%i")
+                        .or()
+                        .gt("age",20);
+
+            }
+        });
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+
+    /**
+     * apply方法
+     * 可以使用占位符进行参数传参
+     * sql: name like ? and age > ? AND date_format(birthday, '%Y-%m-%d') = ?
+     */
+    @Test
+    public void test12() {
+        QueryWrapper<Person> wrapper = Wrappers.query();
+
+        // SQL: (name like ? and age > ?)
+        wrapper.apply("name like {0} and age > {1}", "%J%", 18);
+
+        // SQL: (date_format(birthday, '%Y-%m-%d') = ?)
+        wrapper.apply("date_format(birthday, '%Y-%m-%d') = {0}", "2001-10-04");
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+
+    /**
+     * last方法
+     * 无视优化规则直接拼接到 sql 的最后,只能调用一次,多次调用以最后一次为准 有sql注入的风险
+     * apply方法可以防止SQL注入，但last方法不能
+     */
+    @Test
+    public void test13() {
+        QueryWrapper<Person> wrapper = Wrappers.query();
+
+        // 无视优化规则直接拼接到 sql 的最后,只能调用一次,多次调用以最后一次为准 有sql注入的风险
+
+        // SQL: name = 'Jone'
+//        String name = "Jone";
+//        wrapper.last("where name = '" + name + "'");
+
+        // SQL: SELECT id,name,sex,age FROM user where name ='' or 1=1; -- '
+        String name = "' or 1=1; -- ";
+        wrapper.last("where name ='" + name + "'");         // 出现SQL注入问题
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+
+    /**
+     * exists方法
+     * 用于exist语句
+     */
+    @Test
+    public void test14() {
+        QueryWrapper<Person> wrapper = Wrappers.query();
+
+        // SQL: (EXISTS (select 1))
+        wrapper.exists("select 1");
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+    /**
+     * notExists方法
+     */
+    @Test
+    public void test15() {
+        QueryWrapper<Person> wrapper = Wrappers.query();
+
+        // SQL: (NOT EXISTS (select 1))
+        wrapper.notExists("select 1");
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+```
+
+### QueryMapper
+
+QueryMapper是AbstractWrapper的子类，主要用于查询指定字段，方法列表如下:
+
+| 方法名                         | 解释     | 
+|-----------------------------|--------|
+| select(String... sqlSelect) | 设置查询字段 | 
+
+
+#### 示例代码:test02/Demo03
+
+```java
+@Test
+    public void test01(){
+        QueryWrapper<Person> wrapper = new QueryWrapper<>();
+        wrapper.select("id","name","sex");
+        wrapper.in("id","5","6");
+        List<Person> list = personMapper.selectList(wrapper);
+
+        list.forEach(System.out::println);
+
+    }
+
+    @Test
+    public void test02(){
+        Person person = new Person();
+        person.setId(5L);
+
+//        QueryWrapper<Person> wrapper = new QueryWrapper<>(person);
+        QueryWrapper<Person> wrapper = Wrappers.query(person);
+        wrapper.select("id","name","sex");
+        List<Person> list = personMapper.selectList(wrapper);
+        list.forEach(System.out::println);
+    }
+
+```
+
+### UpdateWrapper
+
+UpdateWrapper也是AbstractWrapper的子类，因此UpdateWrapper也具备之前的那些查询方法，不同的是，UpdateMapper在那些方法基础之上还提供了很多有关于更新操作的方法:
+
+| 方法名                           | 解释     | 
+|-------------------------------|--------|
+| set(String column,Object val) | 设置查询字段 | 
+
+
+#### 示例:test02/Demo03
+
+```java
+    @Test
+    public void test03() throws Exception {
+        UpdateWrapper<Person> wrapper = Wrappers.update();
+
+        // UpdateWrapper也是AbstractWrapper的子类,因此也具备一些基本的查询方法
+        wrapper.like("name", "J");
+
+        List<Person> userList = personMapper.selectList(wrapper);
+
+        for (Person user : userList) {
+            System.out.println(user);
+        }
+    }
+
+
+    /**
+     * 第一种方法: 使用wrapper来修改,并且指定查询条件
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test04() throws Exception {
+        UpdateWrapper<Person> wrapper = Wrappers.update();
+        wrapper.set("name", "Jackson");
+        wrapper.set("age", "16");
+        wrapper.set("sex", "1");
+        wrapper.eq("id", 2L);
+
+        // SQL: UPDATE person SET name=?, sex=?, age=? WHERE (id = ?)
+        personMapper.update(null, wrapper);
+    }
+
+
+    /**
+     * 第二种方法: 使用wrapper来封装条件,使用entity来封装修改的数据
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test05() throws Exception {
+        UpdateWrapper<Person> wrapper = Wrappers.update();
+        wrapper.eq("id", 2L);
+
+        Person user = new Person(null, "Jack", "0", 28);
+
+        // SQL: UPDATE person SET name=?, sex=?, age=? WHERE (id = ?)
+        personMapper.update(user, wrapper);
+
+    }
+
+    /**
+     * 第三种方法: Wrappers.update(user)传递查询的条件,使用wrapper来修改
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test06() throws Exception {
+        Person user = new Person();
+        user.setId(1L);
+
+        // user当做查询条件
+        UpdateWrapper<Person> wrapper = Wrappers.update(user);
+        wrapper.set("name", "xiaohui");
+        wrapper.set("sex", "0");
+        wrapper.set("age", "22");
+
+        // SQL : UPDATE person SET name=?,sex=?,age=? WHERE id=?
+        personMapper.update(null, wrapper);
+    }
+
+    /**
+     * setSql方法
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test07() throws Exception {
+        UpdateWrapper<Person> wrapper = Wrappers.update();
+        wrapper.setSql("name='abc',sex='0',age=18 where id=1");
+
+        // SQL: UPDATE person SET name='abc',sex='0',age=18 where id=1
+        personMapper.update(null, wrapper);
+    }
+
+```
+
+### LambdaQueryWrapper
+
+LambdaQueryWrapper是QueryWrapper的子类，具备QueryWrapper的所有方法，QueryWrapper的方法上提供了一系列有关于方法引的操作;
+
+#### 示例:test02/Demo04
+
+```java
+
+
+```
+
 
 
 

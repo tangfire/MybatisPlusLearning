@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 @SpringBootTest
 public class Demo02 {
@@ -186,6 +187,149 @@ public class Demo02 {
         List<Person> users = personMapper.selectList(wrapper);
         users.forEach(System.out::println);
     }
+
+
+    /**
+     * and方法
+     * 用于拼接一个其他的整体条件
+     * 生成的SQL为: age < ? and (sex = ? or name like ?)
+     */
+    @Test
+    public void test09(){
+        QueryWrapper<Person> wrapper = Wrappers.query();
+        wrapper.lt("age",20);
+        wrapper.and(new Consumer<QueryWrapper<Person>>() {
+            @Override
+            public void accept(QueryWrapper<Person> personQueryWrapper) {
+                personQueryWrapper.eq("sex",0)
+                        .or()
+                        .like("name","%i%");
+            }
+        });
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+
+    /**
+     * func方法: 用于多条件的拼接
+     * 生成的SQL语句: age < ? and name like ? and sex = ?
+     */
+    @Test
+    public void test10(){
+        QueryWrapper<Person> wrapper = Wrappers.query();
+        wrapper.lt("age",21);
+        wrapper.func(new Consumer<QueryWrapper<Person>>() {
+            @Override
+            public void accept(QueryWrapper<Person> personQueryWrapper) {
+                personQueryWrapper.like("name","%i");
+                personQueryWrapper.eq("sex",0);
+            }
+        });
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+    /**
+     * nested方法
+     * 等价于and方法
+     * 生成的SQL语句: id = ? and (name like ? or age > ?)
+     */
+    @Test
+    public void test11(){
+        QueryWrapper<Person> wrapper = Wrappers.query();
+        // nested()等价于and方法()
+        wrapper.eq("id",1);
+        wrapper.nested(new Consumer<QueryWrapper<Person>>() {
+            @Override
+            public void accept(QueryWrapper<Person> personQueryWrapper) {
+                personQueryWrapper.like("name","%i")
+                        .or()
+                        .gt("age",20);
+
+            }
+        });
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+
+    /**
+     * apply方法
+     * 可以使用占位符进行参数传参
+     * sql: name like ? and age > ? AND date_format(birthday, '%Y-%m-%d') = ?
+     */
+    @Test
+    public void test12() {
+        QueryWrapper<Person> wrapper = Wrappers.query();
+
+        // SQL: (name like ? and age > ?)
+        wrapper.apply("name like {0} and age > {1}", "%J%", 18);
+
+        // SQL: (date_format(birthday, '%Y-%m-%d') = ?)
+        wrapper.apply("date_format(birthday, '%Y-%m-%d') = {0}", "2001-10-04");
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+
+    /**
+     * last方法
+     * 无视优化规则直接拼接到 sql 的最后,只能调用一次,多次调用以最后一次为准 有sql注入的风险
+     * apply方法可以防止SQL注入，但last方法不能
+     */
+    @Test
+    public void test13() {
+        QueryWrapper<Person> wrapper = Wrappers.query();
+
+        // 无视优化规则直接拼接到 sql 的最后,只能调用一次,多次调用以最后一次为准 有sql注入的风险
+
+        // SQL: name = 'Jone'
+//        String name = "Jone";
+//        wrapper.last("where name = '" + name + "'");
+
+        // SQL: SELECT id,name,sex,age FROM user where name ='' or 1=1; -- '
+        String name = "' or 1=1; -- ";
+        wrapper.last("where name ='" + name + "'");         // 出现SQL注入问题
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+
+    /**
+     * exists方法
+     * 用于exist语句
+     */
+    @Test
+    public void test14() {
+        QueryWrapper<Person> wrapper = Wrappers.query();
+
+        // SQL: (EXISTS (select 1))
+        wrapper.exists("select 1");
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
+    /**
+     * notExists方法
+     */
+    @Test
+    public void test15() {
+        QueryWrapper<Person> wrapper = Wrappers.query();
+
+        // SQL: (NOT EXISTS (select 1))
+        wrapper.notExists("select 1");
+
+        List<Person> users = personMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+
 
 
 
