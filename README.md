@@ -1510,9 +1510,53 @@ LambdaQueryWrapper是QueryWrapper的子类，具备QueryWrapper的所有方法�
 #### 示例:test02/Demo04
 
 ```java
+/**
+     * 使用QueryWrapper
+     * @throws Exception
+     */
+    @Test
+    public void test1() throws Exception {
 
+        QueryWrapper<Person> wrapper = Wrappers.query();
+        wrapper.eq("id","2");
+
+        List<Person> userList = personMapper.selectList(wrapper);
+        for (Person user : userList) {
+            System.out.println(user);
+        }
+    }
+
+    /**
+     * 使用LambdaQueryWrapper
+     * @throws Exception
+     */
+    @Test
+    public void test2() throws Exception {
+
+        LambdaQueryWrapper<Person> wrapper = Wrappers.lambdaQuery();
+
+        // id=1
+//        wrapper.eq(Person::getId,1);
+
+        // select id,name,age from person where id in (5,2,6) and name like "%a%"
+        wrapper.in(Person::getId,"5","2","6")
+                .like(Person::getName,"a")
+                .select(Person::getId,Person::getName,Person::getAge);
+
+        List<Person> userList = personMapper.selectList(wrapper);
+        for (Person user : userList) {
+            System.out.println(user);
+        }
+    }
 
 ```
+
+
+### LambdaUpdateMapper
+
+LambdaUpdateMapper同样是UpdateMapper的子类，具备UpdateMapper的所有方法，UpdateMapper的方法上提供了一系列有关于方法引的操作；
+
+#### 示例:
 
 
 
