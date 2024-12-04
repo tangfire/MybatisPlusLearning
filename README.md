@@ -1558,6 +1558,566 @@ LambdaUpdateMapper同样是UpdateMapper的子类，具备UpdateMapper的所有�
 
 #### 示例:
 
+```java
+/**
+     * 使用UpdateWrapper
+     * @throws Exception
+     */
+    @Test
+    public void test3() throws Exception {
+        UpdateWrapper<Person> wrapper = Wrappers.update();
+        wrapper.eq("id","2");
+        wrapper.set("name","abb");
+        wrapper.set("age",18);
+
+        personMapper.update(wrapper);
+    }
+
+
+    /**
+     * 使用LambdaUpdateWrapper
+     * @throws Exception
+     */
+    @Test
+    public void test4() throws Exception {
+        LambdaUpdateWrapper<Person> wrapper = Wrappers.lambdaUpdate();
+
+        wrapper.eq(Person::getId,2);
+        wrapper.set(Person::getName,"xiaolan");
+        wrapper.set(Person::getAge,18);
+
+        personMapper.update(wrapper);
+    }
+
+```
+
+
+## Mapper的分页查询
+
+### Mapper分页查询配置
+
+```java
+package com.example.mybatispluslearning.config;
+ 
+import com.baomidou.mybatisplus.annotation.DbType;
+import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
+import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+ 
+@Configuration
+@MapperScan("com.example.mybatispluslearning.mapper")
+public class MybatisPlusConfig {
+    /**
+     * 新版
+     */
+    @Bean
+    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+        MybatisPlusInterceptor mybatisPlusInterceptor = new MybatisPlusInterceptor();
+        mybatisPlusInterceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));//如果配置多个插件,切记分页最后添加
+        //interceptor.addInnerInterceptor(new PaginationInnerInterceptor()); 如果有多数据源可以不配具体类型 否则都建议配上具体的DbType
+        return mybatisPlusInterceptor;
+    }
+}
+
+
+```
+
+### Mapper完成分页查询
+
+
+
+在BaseMapper中主要提供有如下方法来完成分页查询：
+
+- `<E extends IPage<T>> E selectPage(E page, @Param(Constants.WRAPPER) Wrapper<T> queryWrapper)：`
+  - 参数1：分页配置类
+  - 参数2：分页查询条件
+  - 解释：根据分页配置和分页查询条件来完成分页查询，当前页数据为指定类型
+- `<E extends IPage<Map<String, Object>>> E selectMapsPage(E page, @Param(Constants.WRAPPER) Wrapper<T> queryWrapper)`
+  - 参数1：分页配置类
+  - 参数2：分页查询条件
+  - 解释：根据分页配置和分页查询条件来完成分页查询，当前页数据为Map类型
+
+
+-------------------------------
+
+### 示例:/test02/Demo05
+
+### 无条件查询
+
+```java
+/**
+     * 无条件分页查询
+     * @throws Exception
+     */
+    @Test
+    public void test1() throws Exception {
+
+        // 封装分页信息
+        Page<Person> page = new Page<>(1,3);
+
+        /*
+         执行分页查询,并将结果封装到page中
+            参数1: 分页配置
+            参数2: 查询条件
+         */
+        personMapper.selectPage(page, null);
+
+        // 当前页数据
+        List<Person> pageData = page.getRecords();
+        for (Person user : pageData) {
+            System.out.println(user);
+        }
+
+        System.out.println("------------");
+
+        System.out.println("当前页：" + page.getCurrent());
+        System.out.println("每页显示的条数：" + page.getSize());
+        System.out.println("总记录数：" + page.getTotal());
+        System.out.println("总页数：" + page.getPages());
+        System.out.println("是否有上一页：" + page.hasPrevious());
+        System.out.println("是否有下一页：" + page.hasNext());
+    }
+
+```
+
+### 带条件分页查询
+
+```java
+/**
+     * 带条件分页查询
+     * @throws Exception
+     */
+    @Test
+    public void test2() throws Exception {
+
+        QueryWrapper<Person> wrapper = Wrappers.query();
+        wrapper.like("name", "a");
+
+        // 封装分页信息
+        Page<Person> page = new Page<>(1, 3);
+
+    /*
+     执行分页查询,并将结果封装到page中
+        参数1: 分页配置
+        参数2: 查询条件
+     */
+        personMapper.selectPage(page, wrapper);
+
+        // 当前页数据
+        List<Person> pageData = page.getRecords();
+        for (Person user : pageData) {
+            System.out.println(user);
+        }
+
+        System.out.println("------------");
+
+        System.out.println("当前页：" + page.getCurrent());
+        System.out.println("每页显示的条数：" + page.getSize());
+        System.out.println("总记录数：" + page.getTotal());
+        System.out.println("总页数：" + page.getPages());
+        System.out.println("是否有上一页：" + page.hasPrevious());
+        System.out.println("是否有下一页：" + page.hasNext());
+    }
+
+```
+
+
+### 将分页数据的查询结果以Map类型返回
+
+```java
+/**
+     * 查询结果以Map返回
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test3() throws Exception {
+
+        // 封装分页信息
+        Page page = new Page<>(1, 3);
+
+        personMapper.selectMapsPage(page, null);
+
+        // 每一条记录都是一个HashMap
+        List<HashMap<String,Object>> pageData = page.getRecords();
+        for (HashMap userMap : pageData) {
+            System.out.println(userMap);
+        }
+
+        System.out.println("------------");
+
+        System.out.println("当前页：" + page.getCurrent());
+        System.out.println("每页显示的条数：" + page.getSize());
+        System.out.println("总记录数：" + page.getTotal());
+        System.out.println("总页数：" + page.getPages());
+        System.out.println("是否有上一页：" + page.hasPrevious());
+        System.out.println("是否有下一页：" + page.hasNext());
+    }
+
+```
+
+
+## MyBatis Plus的Service查询
+
+### 通用Service简介
+
+通用 Service CRUD 封装IService接口，进一步封装 CRUD 采用 get 查询单行、remove删除、list 查询集合、page查询分页
+
+#### 使用步骤
+
+1. 定义一个UserService接口继承与MyBatisPlus提供的IService接口:
+
+```java
+package com.example.mybatispluslearning.service;
+
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.example.mybatispluslearning.entity.Person;
+
+public interface IPersonService extends IService<Person> {
+    
+}
+
+```
+
+2. 定义一个UserService的实现类，并且继承与MyBatisPlus提供的ServiceImpl:
+
+
+```java
+package com.example.mybatispluslearning.service.impl;
+
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.mybatispluslearning.entity.Person;
+import com.example.mybatispluslearning.mapper.PersonMapper;
+import com.example.mybatispluslearning.service.IPersonService;
+
+@Service("personService")
+public class PersonServiceImpl extends ServiceImpl<PersonMapper, Person> implements IPersonService {
+}
+
+
+```
+
+### 通用service常用方法
+
+- 新增：
+  - `default boolean save(T entity)`：新增记录
+  - `boolean saveBatch(Collection<T> entityList)`：批量插入
+  - `saveBatch(Collection<T> entityList, int batchSize)`：一次性批量插入batchSize条记录
+
+
+- 删除：
+  - `boolean removeById(Serializable id)`：根据id删除
+  - `boolean removeByMap(Map<String, Object> columnMap)`：根据条件删除
+  - `boolean remove(Wrapper<T> queryWrapper)`：使用Wrapper封装条件删除
+  - `boolean removeByIds(Collection<? extends Serializable> idList)`：删除一批
+
+
+- 修改：
+  - `boolean updateById(T entity)`：修改
+  - `boolean update(Wrapper<T> updateWrapper)`：根据Wrapper修改
+  - `boolean update(T entity, Wrapper<T> updateWrapper)`：使用Wrapper查询出结果，修改为entity
+  - `boolean updateBatchById(Collection<T> entityList)`：批量修改
+  - `updateBatchById(Collection<T> entityList, int batchSize)`：一次性批量修改batchSize条记录
+  - `boolean saveOrUpdate(T entity)`：如果id存在则修改，如果id不存在则新增
+
+
+- 查询：
+  - `T getById(Serializable id)`：根据id查询
+  - `List<T> listByIds(Collection<? extends Serializable> idList)`：根据一批id查询多条记录
+  - `List<T> listByMap(Map<String, Object> columnMap)`：根据条件查询多条记录
+  - `T getOne(Wrapper<T> queryWrapper)`：根据Wrapper查询一条记录，如果查询到多条则抛出异常
+  - `T getOne(Wrapper<T> queryWrapper, boolean throwEx)`：根据Wrapper查询一条记录，通过throwEx决定是否抛出异常
+  - `int count()`：查询总记录数
+  - `int count(Wrapper<T> queryWrapper)`：根据条件查询总记录数
+
+
+- 分页：
+  - `<E extends IPage<T>> E page(E page, Wrapper<T> queryWrapper)`：带条件分页查询，当前页数据为T类型
+  - `<E extends IPage<T>> E page(E page)`：无条件分页
+  - `List<Map<String, Object>> listMaps(Wrapper<T> queryWrapper)`：带条件分页查询，当前页数据为HashMap类型
+  - `List<Map<String, Object>> listMaps()`：无条件分页
+
+### 示例:test02/Demo06
+
+```java
+package com.example.mybatispluslearning.test02;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
+import com.baomidou.mybatisplus.extension.conditions.update.UpdateChainWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.mybatispluslearning.entity.Person;
+import com.example.mybatispluslearning.mapper.PersonMapper;
+import com.example.mybatispluslearning.service.IPersonService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.HashMap;
+import java.util.List;
+
+@SpringBootTest
+public class Demo06 {
+
+    @Autowired
+    private IPersonService personService;
+
+    /**
+     * 新增
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test1() throws Exception {
+        Person user = new Person(null, "xiaohui", "0", 20);
+        personService.save(user);
+    }
+
+    /**
+     * 如果id存在则修改,不存在则新增
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test2() throws Exception {
+        Person user = new Person(1L, "xiaohui", "0", 20);
+        personService.saveOrUpdate(user);
+    }
+
+    /**
+     * 根据id删除
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test3() throws Exception {
+        personService.removeById(1L);
+    }
+
+    /**
+     * 根据id修改
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test4() throws Exception {
+
+        Person user = new Person(1L, "xiaolan", "1", 18);
+        personService.updateById(user);
+    }
+
+    /**
+     * 根据id查询
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test5() throws Exception {
+        Person user = personService.getById(1L);
+        System.out.println(user);
+    }
+
+    /**
+     * 查询列表
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test6() throws Exception {
+
+        QueryWrapper<Person> wrapper = Wrappers.query();
+        wrapper.in("id", "1", "2");
+
+        // 查询所有
+//        List<User> userList = userService.list();
+
+        // 通过wrapper查询
+        List<Person> userList = personService.list(wrapper);
+
+        for (Person user : userList) {
+            System.out.println(user);
+        }
+    }
+
+
+    /**
+     * 查询总记录数
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test7() throws Exception {
+
+        QueryWrapper<Person> wrapper = Wrappers.query();
+        wrapper.like("name", "a");
+
+        // 查询总记录数
+//        int count = userService.count();
+
+        // 根据条件查询总记录数
+        long count = personService.count(wrapper);
+
+        System.out.println(count);
+    }
+
+    /**
+     * 分页查询(当前页类型为指定类型)
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test8() throws Exception {
+
+        Page<Person> page = new Page<>(1, 3);
+
+        personService.page(page);
+
+        // 当前页数据
+        List<Person> pageData = page.getRecords();
+        for (Person user : pageData) {
+            System.out.println(user);
+        }
+
+        System.out.println("------------");
+
+        System.out.println("当前页：" + page.getCurrent());
+        System.out.println("每页显示的条数：" + page.getSize());
+        System.out.println("总记录数：" + page.getTotal());
+        System.out.println("总页数：" + page.getPages());
+        System.out.println("是否有上一页：" + page.hasPrevious());
+        System.out.println("是否有下一页：" + page.hasNext());
+    }
+
+
+    /**
+     * 分页查询(当前页结果为HashMap类型)
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test9() throws Exception {
+
+        Page page = new Page<>(1, 3);
+
+        personService.pageMaps(page);
+
+        // 当前页数据
+        List<HashMap<String, Object>> pageData = page.getRecords();
+        for (HashMap userMap : pageData) {
+            System.out.println(userMap);
+        }
+
+        System.out.println("------------");
+
+        System.out.println("当前页：" + page.getCurrent());
+        System.out.println("每页显示的条数：" + page.getSize());
+        System.out.println("总记录数：" + page.getTotal());
+        System.out.println("总页数：" + page.getPages());
+        System.out.println("是否有上一页：" + page.hasPrevious());
+        System.out.println("是否有下一页：" + page.hasNext());
+    }
+
+
+    /**
+     * 链式查询
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test10() throws Exception {
+
+        QueryChainWrapper<Person> chainWrapper = personService.query();
+
+        // SQL: SELECT id,name,age FROM user WHERE (id IN (?,?,?) AND name LIKE ?)
+        List<Person> userList = chainWrapper.select("id", "name", "age")
+                .in("id", "1", "2", "3")
+                .like("name", "a")
+                .list();
+
+        for (Person user : userList) {
+            System.out.println(user);
+        }
+    }
+
+
+    /**
+     * 链式修改
+     *
+     * @throws Exception
+     */
+    @Test
+    public void test11() throws Exception {
+
+        UpdateChainWrapper<Person> chainWrapper = personService.update();
+
+        // SQL: UPDATE user SET age=? WHERE (id IN (?,?) OR sex = ?)
+        chainWrapper.in("id","1","2")
+                .or()
+                .eq("sex","0")
+                .set("age",20).
+                update();
+    }
+
+
+
+}
+
+
+
+```
+
+## MyBatisPlus的常用注解
+
+### @TableName
+
+1. 操作数据库表时，Mapper接口继承BaseMapper，泛型名和数据库表名对应，如果数据表名为t_user，而BaseMapper的泛型为实体类User，导致找不到数据库的表。
+
+```java
+/**
+ * @author lscl
+ * @version 1.0
+ * @intro:
+ */
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+
+@TableName("t_user")
+public class User {
+    private Long id;
+    private String name;
+    private String sex;
+    private Integer age;
+}
+
+
+```
+
+2. 解决方法2：如果多张表的表名为t_user/t_cat/t_xxx，不需要为每一个实体类添加@TableName注解，在MyBatis全局配置即可,为所有表名添加前缀
+
+```properties
+mybatis-plus:
+  global-config: 	# MyBatisPlus全局配置
+    db-config:  	# 配置数据库
+      table-prefix: t_  #配置表名前缀为t_
+
+```
+
+
+### @TableId
+
+MyBatisPlus在实现CRUD默认会将Id作为主键，在插入数据时，如果主键不叫Id则添加功能会失败
+
+
+
+
+
+
 
 
 

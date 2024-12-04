@@ -2,6 +2,8 @@ package com.example.mybatispluslearning.test02;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.example.mybatispluslearning.entity.Person;
 import com.example.mybatispluslearning.mapper.PersonMapper;
@@ -55,5 +57,37 @@ public class Demo04 {
             System.out.println(user);
         }
     }
+
+
+    /**
+     * 使用UpdateWrapper
+     * @throws Exception
+     */
+    @Test
+    public void test3() throws Exception {
+        UpdateWrapper<Person> wrapper = Wrappers.update();
+        wrapper.eq("id","2");
+        wrapper.set("name","abb");
+        wrapper.set("age",18);
+
+        personMapper.update(wrapper);
+    }
+
+
+    /**
+     * 使用LambdaUpdateWrapper
+     * @throws Exception
+     */
+    @Test
+    public void test4() throws Exception {
+        LambdaUpdateWrapper<Person> wrapper = Wrappers.lambdaUpdate();
+
+        wrapper.eq(Person::getId,2);
+        wrapper.set(Person::getName,"xiaolan");
+        wrapper.set(Person::getAge,18);
+
+        personMapper.update(wrapper);
+    }
+
 
 }
