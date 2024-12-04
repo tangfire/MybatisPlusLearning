@@ -1,4 +1,5 @@
 mybatis-plus:
+  type-enums-package: com.example.mybatispluslearning.enmu_
 #  global-config:
 #    db-config:
 #      logic-delete-field: deleted # 全局逻辑删除的实体字段名(配置后可以忽略不配置 @TableLogic)

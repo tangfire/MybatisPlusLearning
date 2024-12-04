@@ -2431,11 +2431,309 @@ public class Demo01 {
 
 我们通常都是将以上字段设置为char或者int类型，然后通过对应的字符/数字代表对应的含义，然后到Java代码中我们通常都需要做类似于如下的判断：
 
+```xml
+<span>${sex==0?'男':'女'}</span>
+
+<if test=${status==0}>未开始</if>
+<if test=${status==1}>进行中</if>
+<if test=${status==2}>已结束</if>
+
+if(status=0){
+	// 未开始....
+}else if(status==1){
+	// 进行中
+} else if(status==2){
+	已结束
+}
+
+```
+
+以上代码比较繁琐，并且可读性不是很高；
+
+在MyBatisPlus中支持我们定义一个枚举与数据库中的字段对应起来，然后在枚举类中，使用@EnumValue注解标注真实的值（与数据库的字段对应），然后定义一个String类型的字段表示这个枚举项代表的字符串含义；
+
+- 准备一张数据表:
+
+```sql
+DROP TABLE IF EXISTS `student`;
+CREATE TABLE `student`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '姓名',
+  `sex` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '性别 0:男 1:女',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of student
+-- ----------------------------
+INSERT INTO `student` VALUES (1, '小灰', '0');
+INSERT INTO `student` VALUES (2, '小蓝', '1');
 
 
+```
+
+- 定义性别枚举
 
 
+```java
+package com.example.mybatispluslearning.enmu;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
+
+/**
+ * @author lscl
+ * @version 1.0
+ * @intro:
+ */
+public enum SexEnum {
+    MAN(0, "男"),
+    WOMAN(1, "女");
+
+    // 这一列的值和数据库表映射
+    @EnumValue      
+    private Integer sexValue;
+    
+    // 这个字段就是这个枚举项的字符串含义
+    private String sexName;
+
+    private SexEnum(Integer sexValue, String sexName) {
+        this.sexValue = sexValue;
+        this.sexName = sexName;
+    }
+}
+
+
+```
+
+- 扫描枚举包
+
+```properties
+#配置日志
+mybatis-plus:
+  # 扫描枚举包
+  type-enums-package: com.example.mybatispluslearning.enmu_
+
+```
+
+- 定义实体类
+
+```java
+package com.example.mybatispluslearning.entity;
+
+
+import com.example.mybatispluslearning.enmu.SexEnum;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * @author lscl
+ * @version 1.0
+ * @intro:
+ */
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class Student {
+    private Integer id;
+    private String name;
+    
+    /*
+        使用枚举类型
+            当从数据库中查询到了0则赋值SexEnum.MAN给sex变量
+            当从数据库中查询到了1则赋值SexEnum.WOMAN给sex变量
+     */
+    private SexEnum sex;
+}
+
+
+```
+
+- 定义Mapper接口:
+
+```java
+package com.example.mybatispluslearning.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.example.mybatispluslearning.entity.Student;
+import org.springframework.stereotype.Repository;
+
+/**
+ * @author lscl
+ * @version 1.0
+ * @intro:
+ */
+@Repository
+public interface StudentMapper extends BaseMapper<Student> {
+}
+
+
+```
+
+#### 示例:test03/Demo02
+
+虽然sex字段为变为了枚举类型，但是将搜索条件设置为sex=0依旧可以搜索到符合条件的记录:
+
+```java
+package com.example.mybatispluslearning.test03;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.example.mybatispluslearning.entity.Student;
+import com.example.mybatispluslearning.mapper.StudentMapper;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.List;
+
+@SpringBootTest
+public class Demo02 {
+
+    @Autowired
+    private StudentMapper studentMapper;
+
+    @Test
+    public void test1() throws Exception {
+        System.out.println(studentMapper.selectById(1L));
+        System.out.println(studentMapper.selectById(2L));
+    }
+
+
+    @Test
+    public void test2() throws Exception {
+
+        QueryWrapper<Student> wrapper = Wrappers.query();
+        // 搜索条件为0依旧可以搜索出来
+        wrapper.eq("sex","0");
+
+        List<Student> stuList = studentMapper.selectList(wrapper);
+        for (Student student : stuList) {
+            System.out.println(student);
+        }
+    }
+
+
+}
+
+```
+
+### @Version
+
+#### 乐观锁与悲观锁
+
+在多个客户端（线程/进程）操作同一个资源并发生写的操作时，我们就需要保证数据的安全性了。
+
+- 如图所示
+
+当我们在购买车票时，首先会进行票数的查询，例如A1在购买车票时查询到票还有100张，准备购买第100张票，与此同时，A2也查询到票数为100，也将购买第100张票；
+
+![i](./imgs/img.png)
+
+- Tips：上述图中，两个窗口在买票之前分别查询了票，发现票数余额为100，然后都卖了第100张票，出现多卖情况
+
+在并发修改某一资源时，我们必须保证线程安全的问题。在操作之前先加锁，这种方式就是采用悲观锁的方式；
+
+- *悲观锁的概念*：悲观锁简单的理解就是程序处于悲观状态，在操作任何资源时都认为其他程序会来修改当前资源，自己不放心，因此在操作资源时加锁。
+
+![ii](./imgs/img_1.png)
+
+
+悲观锁虽然保证了程序的安全性，同时效率也*降低*了很多，在一个客户端操作时，其他客户端均不可操作，降低了系统的并发性能。
+
+
+- *乐观锁概念*：乐观锁简单理解就是程序一直处于乐观状态，在操作任何资源时认为其他程序不会来修改当前资源，整个过程不加锁，*不加锁效率是可以保证，但不是又回到了我们最初的那个状态吗？即线程安全问题。*
+
+我们可以在每条记录中分配一个`_version`字段，每当我们对记录进行更新时，此版本号都会自增。我们可以借助该字段帮我们完成乐观锁。保证线程安全问题。
+
+![iii](./imgs/img_2.png)
+
+
+实现方式:
+
+```sql
+-- 要修改数据之前，先查该数据上一次修改的时间戳
+select version from table_ where id=1; 
+
+-- 修改数据时，更新版本号
+update table_ set goods_name='小苹果', version=version+1 where version=${version};
+
+```
+
+#### @Version实现乐观锁
+
+- 建立数据库:
+
+```sql
+DROP TABLE IF EXISTS `goods`;
+CREATE TABLE `goods`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  `count` int(11) NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of goods
+-- ----------------------------
+INSERT INTO `goods` VALUES (1, '手机', 100);
+INSERT INTO `goods` VALUES (2, '电脑', 100);
+
+
+```
+
+- 实体类
+
+```java
+package com.example.mybatispluslearning.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.Version;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class Goods {
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    private String name;
+    private Integer count;
+
+    @Version            // 乐观锁字段
+    private Integer version;
+}
+
+
+```
+
+- Mapper接口:
+
+```java
+package com.example.mybatispluslearning.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
+import com.example.mybatispluslearning.entity.Goods;
+import org.springframework.stereotype.Repository;
+
+/**
+ * @author lscl
+ * @version 1.0
+ * @intro:
+ */
+@Repository
+public interface GoodsMapper extends BaseMapper<Goods> {
+}
+
+```
+
+#### 示例:test03/Demo03
 
 
 
