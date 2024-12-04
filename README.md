@@ -2078,11 +2078,6 @@ public class Demo06 {
 1. 操作数据库表时，Mapper接口继承BaseMapper，泛型名和数据库表名对应，如果数据表名为t_user，而BaseMapper的泛型为实体类User，导致找不到数据库的表。
 
 ```java
-/**
- * @author lscl
- * @version 1.0
- * @intro:
- */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -2112,6 +2107,333 @@ mybatis-plus:
 ### @TableId
 
 MyBatisPlus在实现CRUD默认会将Id作为主键，在插入数据时，如果主键不叫Id则添加功能会失败
+
+解决方案：@TableId注解标识属性，将此属性对应的字段指定为主键
+
+```java
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+
+@TableName("t_user")
+public class User {
+
+    // 将当前属性所对应的字段作为主键
+    @TableId
+    private Long id;
+    private String name;
+    private String sex;
+    private Integer age;
+}
+
+
+```
+
+#### 1. value属性
+
+问题：实体类中被标识为主键的属性名为id，而数据库的主键为uid，则id属性不会对应uid字段上
+
+解决方案：使用@TableId的value属性设置当前主键字段的字段名为uid
+
+```java
+package com.dfbz.entity;
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class User {
+
+    @TableId(value = "uid")
+    private Long id;
+    private String name;
+    private String sex;
+    private Integer age;
+}
+
+
+```
+
+#### 2. 主键策略
+
+MybatisPlus为我们支持了许多种的主键策略；
+
+主键策略是指Mybatis-plus可以自动生成主键的策略，不需要手动插入主键，由MybatisPlus的主键策略帮我们自动生成主键
+
+在枚举类IdType中定制有如下几种注解策略：
+
+```java
+public enum IdType {
+    
+    // 数据自增(该类型请确保数据库设置了 ID自增 否则无效)
+    AUTO(0),
+    
+    // 采用雪花算法生成ID
+    NONE(1),
+    
+    // 交由用户自己分配ID(必须分配,不分配则出现异常,除非数据库表本身设置了自增)
+    INPUT(2),
+
+    // 采用雪花算法((主键类型为number或string)
+    // 默认实现类 {@link com.baomidou.mybatisplus.core.incrementer.DefaultIdentifierGenerator}(雪花算法)
+    ASSIGN_ID(3),
+    
+    // 分配UUID (主键类型为 string)
+    // 默认实现类 {@link com.baomidou.mybatisplus.core.incrementer.DefaultIdentifierGenerator}(UUID.replace("-",""))
+    ASSIGN_UUID(4),
+    
+    // 不推荐使用,推荐使用ASSIGN_ID
+    @Deprecated
+    ID_WORKER(3),
+    
+    // 不推荐使用,推荐使用ASSIGN_ID
+    @Deprecated
+    ID_WORKER_STR(3),
+    
+    // 不推荐使用,推荐使用ASSIGN_UUID
+    @Deprecated
+    UUID(4);
+
+    private final int key;
+
+    IdType(int key) {
+        this.key = key;
+    }
+}
+
+
+```
+
+- 实体类:
+
+```java
+package com.example.mybatispluslearning.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class Person {
+    
+    // 使用数据库自增策略
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    private String name;
+    private String sex;
+    private Integer age;
+    private String birthday;
+
+    public Person(Long id, String name, String sex, Integer age) {
+        this.id = id;
+        this.name = name;
+        this.sex = sex;
+        this.age = age;
+    }
+}
+
+
+```
+
+- 全局配置自增策略
+
+```properties
+mybatis-plus:
+  global-config: 	# MyBatisPlus全局配置
+    db-config:  	# 配置数据库
+      id-type: auto # 统一设置id生成策略
+
+
+
+```
+
+### 示例:test02/Demo07
+
+```java
+package com.example.mybatispluslearning.test02;
+
+import com.example.mybatispluslearning.entity.Person;
+import com.example.mybatispluslearning.service.IPersonService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+public class Demo07 {
+
+  @Autowired
+  private IPersonService personService;
+
+  @Test
+  public void test1() throws Exception {
+    Person user = new Person(111L, "xiaohui", "0", 20);
+    personService.save(user);
+  }
+
+}
+
+```
+
+### @TableField
+
+如果实体类的普通属性名，和数据库非主键的字段名不一致解决方案：@TableField设置对应字段名
+
+```java
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class User {
+
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    
+    @TableField("user_name")
+    private String name;
+    
+    @TableField("user_sex")
+    private String sex;
+    
+    @TableField("user_age")
+    private Integer age;
+}
+
+
+```
+
+### @TableLogic
+
+在实际开发中，我们删除一条记录可能只是修改其状态，并不是真正的从数据库中删除掉；这样的删除成为逻辑删除；
+
+- 逻辑删除：表中设置字段为删除状态 比如删除为1 未删除为0 则查询时，只会查到状态为0的数据(可以进行数据恢复)。
+- 物理删除：从表中删除。
+
+`本质上就是执行了一个update`
+
+当实体类中有标注逻辑删除字段时，在查询时是不会查询被逻辑删除的记录的，示例代码：
+
+
+
+准备一张数据表：
+
+```sql
+DROP TABLE IF EXISTS `emp`;
+CREATE TABLE `emp`  (
+                      `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+                      `name` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '姓名',
+                      `is_delete` int(11) NULL DEFAULT NULL COMMENT '是否删除 0：未删除 1：删除',
+                      PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of emp
+-- ----------------------------
+INSERT INTO `emp` VALUES (1, 'xiaohui', 0);
+INSERT INTO `emp` VALUES (2, 'xiaolan', 0);
+
+
+```
+
+实体类:
+
+```java
+package com.example.mybatispluslearning.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * @author lscl
+ * @version 1.0
+ * @intro:
+ */
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class Emp {
+
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    private String name;
+
+    /*
+        表示该列为逻辑删除字段
+        0: 表示未删除
+        1: 表示已删除
+     */
+    @TableLogic
+    private Integer isDelete;
+}
+
+
+```
+
+
+
+#### 示例:test03/Demo01
+
+```java
+package com.example.mybatispluslearning.test03;
+
+import com.example.mybatispluslearning.entity.Emp;
+import com.example.mybatispluslearning.mapper.EmpMapper;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.List;
+
+@SpringBootTest
+public class Demo01 {
+
+  @Autowired
+  private EmpMapper empMapper;
+
+  @Test
+  public void test2() throws Exception {
+
+    // 只是逻辑删除(把id为1的记录的is_delete改为1)
+    empMapper.deleteById(1L);
+  }
+
+  @Test
+  public void test3() throws Exception {
+
+    // 不会查询is_delete为1的记录
+    List<Emp> empList = empMapper.selectList(null);
+    for (Emp emp : empList) {
+      System.out.println(emp);
+    }
+  }
+
+
+}
+
+
+```
+
+### EnumValue
+
+在数据库中，经常会有一些字段符合枚举类型；
+
+例如：
+
+- sex：0代表男，1代表女
+- status：0代表未开始，1代表进行中，2代表已结束
+- is_secret：0代表私密，1代表公开等
+- is_mark：0代表未签收，1代表拒签，2代表已签收
+
+
+我们通常都是将以上字段设置为char或者int类型，然后通过对应的字符/数字代表对应的含义，然后到Java代码中我们通常都需要做类似于如下的判断：
+
+
+
+
 
 
 
