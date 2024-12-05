@@ -7,6 +7,11 @@
 
 [超详细超全面的MyBatisPlus的所有使用方法](https://blog.csdn.net/Bb15070047748/article/details/129212543)
 
+[【IDEA】IntelliJ IDEA 编译代码报错 找不到符号 符号: 找不到符号包 包](https://blog.csdn.net/qq_21383435/article/details/112172998)
+
+[SpringBoot 3.x+Mybatis Plus多数据源极简配置](https://blog.csdn.net/qq_40718345/article/details/141472627)
+
+[Spring Boot 3 整合 Mybatis-Plus 动态数据源实现多数据源切换](https://blog.csdn.net/u013737132/article/details/134888348)
 
 # 测试样例
 
