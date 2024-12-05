@@ -9,6 +9,8 @@ mybatis-plus:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   # 配置mapper的扫描，找到所有的mapper.xml映射文件 如果和默认路径一样可以不配置
   mapper-locations: classpath*:/mapper/**/*.xml
+  # 扫描实体类的包路径
+  typeAliasesPackage: com.example.mybatispluslearning.entity
 
 spring:
   datasource:

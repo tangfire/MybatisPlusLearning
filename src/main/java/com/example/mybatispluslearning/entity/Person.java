@@ -2,14 +2,19 @@ package com.example.mybatispluslearning.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.activerecord.Model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Person {
+@TableName("person")
+public class Person extends Model<Person> {
 
     // 使用数据库自增策略
     @TableId(type = IdType.AUTO)
@@ -25,4 +30,5 @@ public class Person {
         this.sex = sex;
         this.age = age;
     }
+
 }

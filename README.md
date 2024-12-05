@@ -628,9 +628,11 @@ package com.example.mybatispluslearning.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.example.mybatispluslearning.entity.User;
+import org.apache.ibatis.annotations.Mapper;
 
+@Mapper
 public interface UserMapper01 extends BaseMapper<User> {
-    String getUserName(Long id);
+  String getUserName(Long id);
 }
 
 ```
@@ -2733,8 +2735,247 @@ public interface GoodsMapper extends BaseMapper<Goods> {
 
 ```
 
+- 给数据库添加version字段
+
+```sql
+ALTER TABLE goods ADD COLUMN version INT DEFAULT(0);
+
+```
+
 #### 示例:test03/Demo03
 
+```java
+package com.example.mybatispluslearning.test03;
+
+import com.example.mybatispluslearning.entity.Goods;
+import com.example.mybatispluslearning.mapper.GoodsMapper;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+public class Demo03 {
+
+    @Autowired
+    private GoodsMapper goodsMapper;
+
+    @Test
+    public void test01(){
+        Goods goods = goodsMapper.selectById(2L);
+        goods.setCount(goods.getCount()-1);
+        goodsMapper.updateById(goods); // 修改完毕后,version在本次version的基础上+1
+    }
+}
+
+
+```
+
+Tips：修改的时候version自动在原来的基础上+1；
+
+## MyBatis Plus绑定Mapper.xml
+
+MyBatisPlus本质上也是MyBatis，因此也支持我们自定义SQL语句，编写Mapper.xml与Mapper接口进行绑定；
+
+- 1. 在application.yml中扫描Mapper.xml:
+
+```yml
+#配置日志
+mybatis-plus:
+  # 扫描mapper.xml文件
+  mapper-locations: classpath:com/dfbz/mapper/*.xml
+  # 配置包别名
+  type-aliases-package: com.dfbz.entity
+
+```
+
+- 我的配置:
+
+```yml
+mybatis-plus:
+  # 配置mapper的扫描，找到所有的mapper.xml映射文件 如果和默认路径一样可以不配置
+  mapper-locations: classpath*:/mapper/**/*.xml
+```
+
+
+
+- 2. 在Mapper接口中扩展方法:
+
+```java
+package com.example.mybatispluslearning.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.example.mybatispluslearning.entity.Person;
+import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
+
+@Mapper
+public interface PersonMapper extends BaseMapper<Person> {
+  List<Person> findAll();
+}
+
+```
+
+- 3. 编写Mapper.xml:
+
+```sql
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace 名称空间，指定对哪个接口进行映射-->
+<mapper namespace="com.example.mybatispluslearning.mapper.PersonMapper">
+    <select id="findAll" resultType="com.example.mybatispluslearning.entity.Person">
+        select * from person
+    </select>
+</mapper>
+
+```
+
+
+如果你希望在MyBatis的XML映射文件中简化`resultType`的表示，不想每次都写全类名，可以通过以下几种方式实现：
+
+### 1. 使用`<typeAlias>`定义简短别名
+MyBatis允许你在XML中定义类型别名。你可以使用`<typeAlias>`为你的类定义一个简短的别名，然后在`resultType`中使用这个别名。
+
+你可以修改你的XML文件如下：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mybatispluslearning.mapper.PersonMapper">
+    
+    <!-- 定义类型别名 -->
+    <typeAlias alias="Person" type="com.example.mybatispluslearning.entity.Person"/>
+
+    <select id="findAll" resultType="Person">
+        select * from person
+    </select>
+</mapper>
+```
+
+在这个例子中，`<typeAlias>`定义了一个名为`Person`的别名，指向`com.example.mybatispluslearning.entity.Person`类，因此在`resultType`中你可以简单地使用`Person`。
+
+### 2. 在配置文件中全局定义别名
+如果你希望在多个XML文件中使用该别名，可以在MyBatis的全局配置文件中定义别名。在你的`mybatis-config.xml`文件中，可以有如下配置：
+
+```xml
+<configuration>
+    <typeAliases>
+        <typeAlias alias="Person" type="com.example.mybatispluslearning.entity.Person"/>
+    </typeAliases>
+</configuration>
+```
+
+在这种情况下，你可以在任何Mapper XML文件中使用`resultType="Person"`。
+
+### 3. 使用Java注解方式
+如果不想在XML中定义映射，并且你的项目框架方便，可以考虑将SQL语句直接写在Mapper接口中，使用注解。例如：
+
+```java
+@Mapper
+public interface PersonMapper extends BaseMapper<Person> {
+    
+    @Select("SELECT * FROM person")
+    List<Person> findAll();
+}
+```
+
+这样就不需要XML文件了，所有映射及SQL语句都在接口中定义，能够减少冗余。
+
+通过上述任一方法，可以使得在Mapper XML文件中指定`resultType`更简洁。无论选择哪种方式，确保你的项目结构保持整洁和易于维护。
+
+
+#### 示例:test03/Demo04
+
+```java
+package com.example.mybatispluslearning.test03;
+
+import com.example.mybatispluslearning.entity.Person;
+import com.example.mybatispluslearning.mapper.PersonMapper;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.List;
+
+@SpringBootTest
+public class Demo04 {
+
+    @Autowired
+    private PersonMapper personMapper;
+
+    @Test
+    public void test01() {
+        List<Person> persons =   personMapper.findAll();
+
+        for (Person person : persons) {
+            System.out.println(person);
+        }
+
+    }
+
+}
+
+
+```
+
+## ActiveRecord的使用
+
+### ActiveRecord简介
+
+ActiveRecord也属于ORM（对象关系映射）层，由Rails最早提出，遵循标准的ORM模型：表映射到记录，记录映射到对象，字段映射到对象属性。配合遵循的命名和配置惯例，能够很大程度的快速实现模型的操作，而且简洁易懂。
+
+ActiveRecord的主要思想是：
+
+- 1）每一个数据库表对应创建一个类，类的每一个对象实例对应于数据库中表的一行记录，通常表的每个字段在类中都有相应的Field；
+- 2）ActiveRecord同时负责把自己持久化，在ActiveRecord中封装了对数据库的访问，即CURD；
+- 3）ActiveRecord是一种领域模型(Domain Model)，封装了部分业务逻辑。
+
+简而言之，AR建立了Java对象与数据库表逻辑上的直接映射，方便了程序的编写。而在MyBatisPlus中使用AR非常简单，只需让JavaBean继承Model类即可。
+
+
+### Model类的使用
+
+在MyBatisPlus中，只要将我们的JavaBean继承与Model类即可获取AR功能，即JavaBean自身实现自身的CURD；
+
+- 让JavaBean继承Model：
+
+```java
+package com.example.mybatispluslearning.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.extension.activerecord.Model;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class Person extends Model<Person> {
+
+    // 使用数据库自增策略
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    private String name;
+    private String sex;
+    private Integer age;
+    private String birthday;
+
+    public Person(Long id, String name, String sex, Integer age) {
+        this.id = id;
+        this.name = name;
+        this.sex = sex;
+        this.age = age;
+    }
+}
+
+
+```
 
 
 
