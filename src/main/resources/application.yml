@@ -13,6 +13,8 @@ mybatis-plus:
   typeAliasesPackage: com.example.mybatispluslearning.entity
 
 spring:
+#  autoconfigure:
+#    exclude:
   datasource:
     dynamic:
       # 没有匹配的数据源时默认匹配的数据源

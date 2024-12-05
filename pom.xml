@@ -74,15 +74,12 @@
             <artifactId>freemarker</artifactId>
         </dependency>
 
-        <!--MyBatisPlus多数据源依赖-->
+        <!--  动态数据源依赖-->
         <dependency>
             <groupId>com.baomidou</groupId>
-            <artifactId>dynamic-datasource-spring-boot-starter</artifactId>
-            <version>3.5.1</version>
+            <artifactId>dynamic-datasource-spring-boot3-starter</artifactId>
+            <version>4.3.1</version>
         </dependency>
-
-
-
 
         <!--lombok-->
         <dependency>
