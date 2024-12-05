@@ -8,26 +8,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Person extends Model<Person> {
+@TableName("client")
+public class Client extends Model<Client> {
 
-    // 使用数据库自增策略
     @TableId(type = IdType.AUTO)
     private Long id;
     private String name;
     private String sex;
     private Integer age;
-    private String birthday;
-
-    public Person(Long id, String name, String sex, Integer age) {
-        this.id = id;
-        this.name = name;
-        this.sex = sex;
-        this.age = age;
-    }
-
 }

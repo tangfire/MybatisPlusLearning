@@ -14,9 +14,32 @@ mybatis-plus:
 
 spring:
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/votedb?autoReconnect=true&useUnicode=true&characterEncoding=utf8&useSSL=false&rewriteBatchedStatements=true
-    username: root
-    password: 8888.216
+    dynamic:
+      # 没有匹配的数据源时默认匹配的数据源
+      primary: master
+      # 当没有匹配的数据源是是否采用默认的数据源,
+      # true: 严格匹配,如果没有匹配到数据源则抛出异常
+      # false(默认值):  如果没有匹配到数据源则使用默认的数据源
+      strict: false
+      datasource:
+        # 数据源的名称(名字任意)
+        master:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/votedb?autoReconnect=true&useUnicode=true&characterEncoding=utf8&useSSL=false&rewriteBatchedStatements=true
+          username: root
+          password: 8888.216
+        # 数据源的名称(名字任意)
+        slave01:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/test1?autoReconnect=true&useUnicode=true&characterEncoding=utf8&useSSL=false&rewriteBatchedStatements=true
+          username: root
+          password: 8888.216
+        # 数据源的名称(名字任意)
+        slave02:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/test2?autoReconnect=true&useUnicode=true&characterEncoding=utf8&useSSL=false&rewriteBatchedStatements=true
+          username: root
+          password: 8888.216
+
 #    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
 #    url: jdbc:p6spy:mysql:///votedb?userUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai

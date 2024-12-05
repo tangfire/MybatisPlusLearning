@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
+import com.example.mybatispluslearning.MybatisPlusLearningApplication;
 import com.example.mybatispluslearning.entity.Person;
 import com.example.mybatispluslearning.mapper.PersonMapper;
 import org.junit.Test;
@@ -20,7 +21,8 @@ import java.util.List;
  * @intro:
  */
 @SpringBootTest()
-public class Demo12_ActiveRecord {
+@RunWith(SpringRunner.class)
+public class Demo05_ActiveRecord {
 
     @Autowired
     private PersonMapper personMapper;

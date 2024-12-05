@@ -2977,6 +2977,434 @@ public class Person extends Model<Person> {
 
 ```
 
+#### 示例:test03/Demo05_ActiveRecord
+
+```java
+package com.example.mybatispluslearning.test03;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
+import com.example.mybatispluslearning.entity.Person;
+import com.example.mybatispluslearning.mapper.PersonMapper;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import java.util.List;
+
+/**
+ * @author lscl
+ * @version 1.0
+ * @intro:
+ */
+@SpringBootTest()
+@RunWith(SpringRunner.class)
+public class Demo12_ActiveRecord {
+
+    @Autowired
+    private PersonMapper personMapper;
+
+    /**
+     * 新增
+     * @throws Exception
+     */
+    @Test
+    public void test1() throws Exception {
+        Person person = new Person(100L,"xiaoming","0",20);
+        person.insert();
+    }
+
+    /**
+     * 删除
+     * @throws Exception
+     */
+    @Test
+    public void test2() throws Exception {
+        Person person = new Person();
+        person.setId(100L);
+        person.deleteById();
+    }
+
+    /**
+     * 修改
+     * @throws Exception
+     */
+    @Test
+    public void test3() throws Exception {
+        Person person = new Person(1L,"xiaohui","1",22);
+        person.updateById();
+    }
+
+    /**
+     * 根据id查询
+     * @throws Exception
+     */
+    @Test
+    public void test4() throws Exception {
+        Person person = new Person();
+        person.setId(100L);
+        Person dbPerson = person.selectById();
+        System.out.println(dbPerson);
+    }
+
+
+    /**
+     * 查询全部
+     * @throws Exception
+     */
+    @Test
+    public void test5() throws Exception {
+        Person person = new Person();
+        List<Person> personList = person.selectAll();
+        for (Person dbPerson : personList) {
+            System.out.println(dbPerson);
+        }
+    }
+
+    /**
+     * 根据Wrapper条件查询
+     * @throws Exception
+     */
+    @Test
+    public void test6() throws Exception {
+
+        QueryWrapper<Person> wrapper = Wrappers.query();
+        wrapper.like("name","a");
+
+        Person person = new Person();
+        
+        // 根据条件查询
+        List<Person> personList = person.selectList(wrapper);
+        for (Person dbPerson : personList) {
+            System.out.println(dbPerson);
+        }
+    }
+
+    /**
+     * 分页查询
+     * @throws Exception
+     */
+    @Test
+    public void test7() throws Exception {
+
+        QueryWrapper<Person> wrapper = Wrappers.query();
+        wrapper.like("name","a");
+
+        Page<Person> page=new Page<>(1,3);
+        Person person = new Person();
+       
+        // 分页查询
+        person.selectPage(page,wrapper);
+
+        List<Person> records = page.getRecords();
+        for (Person record : records) {
+            System.out.println(record);
+        }
+    }
+}
+
+
+```
+
+### 1. **第一段代码：**
+
+```java
+@SpringBootTest(classes = MybatisPlusLearningApplication.class)
+@RunWith(SpringRunner.class)
+public class Demo12_ActiveRecord {
+    // Test methods...
+}
+```
+
+### 2. **第二段代码：**
+
+```java
+@SpringBootTest()
+public class Demo12_ActiveRecord {
+    // Test methods...
+}
+```
+
+这两段代码的主要区别在于 `@SpringBootTest` 注解的配置和是否使用 `@RunWith(SpringRunner.class)`。
+
+
+### 区别解释：
+
+1. **`@SpringBootTest(classes = MybatisPlusLearningApplication.class)` 与 `@SpringBootTest()`：**
+
+  - **`@SpringBootTest(classes = MybatisPlusLearningApplication.class)`**:
+    - 这个注解明确指定了 Spring Boot 启动类（`MybatisPlusLearningApplication.class`）。当你有多个 Spring Boot 启动类时，可以通过 `classes` 参数明确指定运行测试时要加载的 Spring Boot 配置类。这样，Spring Boot 测试会基于 `MybatisPlusLearningApplication` 类来初始化上下文。
+    - 如果你不指定 `classes`，Spring Boot 会根据类路径中找到的启动类自动选择一个默认的配置类，通常是一个包含 `@SpringBootApplication` 注解的类。
+
+  - **`@SpringBootTest()`**:
+    - 如果没有传入 `classes` 参数，Spring Boot 会自动扫描类路径中的启动类（包含 `@SpringBootApplication` 注解的类），并以此作为默认的启动类来初始化 Spring 应用上下文。也就是说，Spring Boot 测试会根据当前项目中自动发现的 `@SpringBootApplication` 配置类来加载应用上下文。
+    - 在大多数情况下，如果你的项目只有一个 `@SpringBootApplication` 启动类，`@SpringBootTest()` 默认行为就足够了。
+
+   **总结**：
+  - `@SpringBootTest(classes = MybatisPlusLearningApplication.class)`：显式指定了启动类。
+  - `@SpringBootTest()`：默认情况下会自动加载 `@SpringBootApplication` 注解的类作为启动类。
+
+2. **`@RunWith(SpringRunner.class)` 与不使用 `@RunWith`：**
+
+  - **`@RunWith(SpringRunner.class)`**:
+    - `@RunWith(SpringRunner.class)` 是 JUnit 4 的注解，表示使用 `SpringRunner` 作为测试运行器。`SpringRunner` 是 Spring 提供的一个测试运行器，它为测试类提供了 Spring 的支持（例如，自动注入、加载 Spring 上下文等）。
+    - **如果你使用的是 JUnit 4**，则需要添加 `@RunWith(SpringRunner.class)` 注解来启用 Spring 测试支持。
+
+  - **不使用 `@RunWith(SpringRunner.class)`**:
+    - **如果你使用的是 JUnit 5**，`@RunWith(SpringRunner.class)` 就不需要了。JUnit 5 的测试框架引入了 `@ExtendWith(SpringExtension.class)` 来替代 JUnit 4 的 `@RunWith` 注解。因此，JUnit 5 中的测试类不需要使用 `@RunWith(SpringRunner.class)`，Spring Boot 自动为你提供了支持。
+    - Spring Boot 2.x 默认使用 JUnit 5 作为测试框架，因此在 JUnit 5 中不再需要显式使用 `@RunWith(SpringRunner.class)`。
+
+   **总结**：
+  - `@RunWith(SpringRunner.class)` 是 JUnit 4 中的注解，用于启用 Spring 测试功能。
+  - 如果你使用的是 JUnit 5，`@RunWith` 被 `@ExtendWith(SpringExtension.class)` 取代，Spring 会自动处理。
+
+### 总结：
+- **第一段代码** 使用了 JUnit 4 的 `@RunWith(SpringRunner.class)` 注解，并显式指定了启动类 `MybatisPlusLearningApplication.class`。
+- **第二段代码** 没有 `@RunWith(SpringRunner.class)`，这通常意味着它是用 JUnit 5 进行测试，且没有显式指定启动类，会使用默认的 `@SpringBootApplication` 启动类。
+
+在 **JUnit 5** 中，你可以省略 `@RunWith(SpringRunner.class)`，而只使用 `@SpringBootTest()`，Spring 会自动启用相应的支持。如果你使用 **JUnit 4**，则需要保留 `@RunWith(SpringRunner.class)`。
+
+
+## 多数据源配置
+
+- 1. 引入多数据依赖
+
+```xml
+<!--MyBatisPlus多数据源依赖-->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>dynamic-datasource-spring-boot-starter</artifactId>
+            <version>3.5.1</version>
+        </dependency>
+```
+
+- 2. 准备两个数据库
+
+```sql
+DROP database IF EXISTS test1;
+create database test1;
+
+use test1;
+
+DROP TABLE IF EXISTS user;
+CREATE TABLE `client` (
+                        `id` bigint(20) NOT NULL COMMENT '主键ID',
+                        `name` varchar(30) DEFAULT NULL COMMENT '姓名',
+                        `sex` char(1) DEFAULT NULL COMMENT '性别 0:男 1:女',
+                        `age` int(11) DEFAULT NULL COMMENT '年龄',
+                        `birthday` date DEFAULT NULL COMMENT '生日',
+                        PRIMARY KEY (`id`)
+);
+
+INSERT INTO `client` VALUES (1, 'Jone', '1', 27, '2001-10-04');
+INSERT INTO `client` VALUES (2, 'Jack', '0', 20, '1999-10-04');
+INSERT INTO `client` VALUES (3, 'Tom', '1', 28, '1996-08-12');
+
+-- -----------------------------------------------
+
+DROP database IF EXISTS test2;
+create database test2;
+
+use test2;
+
+DROP TABLE IF EXISTS user;
+CREATE TABLE `client` (
+                        `id` bigint(20) NOT NULL COMMENT '主键ID',
+                        `name` varchar(30) DEFAULT NULL COMMENT '姓名',
+                        `sex` char(1) DEFAULT NULL COMMENT '性别 0:男 1:女',
+                        `age` int(11) DEFAULT NULL COMMENT '年龄',
+                        `birthday` date DEFAULT NULL COMMENT '生日',
+                        PRIMARY KEY (`id`)
+);
+
+INSERT INTO `client` VALUES (4, 'Sandy', '1', 21, '2001-10-04');
+INSERT INTO `client` VALUES (5, 'Billie', '0', 24, '1992-09-07');
+INSERT INTO `client` VALUES (6, 'Jackson', '0', 18, '1996-08-12');
+
+```
+
+- 3. 多数据源配置:
+
+```yml
+spring:
+  datasource:
+    dynamic:
+      # 没有匹配的数据源时默认匹配的数据源
+      primary: master
+      # 当没有匹配的数据源是是否采用默认的数据源,
+      # true: 严格匹配,如果没有匹配到数据源则抛出异常
+      # false(默认值):  如果没有匹配到数据源则使用默认的数据源
+      strict: false
+      datasource:
+        # 数据源的名称(名字任意)
+        master:
+          driver-class-name: com.mysql.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/test1?serverTimezone=GMT%2b8
+          username: root
+          password: admin
+        # 数据源的名称(名字任意)
+        slave:
+          driver-class-name: com.mysql.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/test2?serverTimezone=GMT%2b8
+          username: root
+          password: admin
+#配置日志
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+
+```
+
+我的配置:
+
+```yml
+mybatis-plus:
+  type-enums-package: com.example.mybatispluslearning.enmu_
+#  global-config:
+#    db-config:
+#      logic-delete-field: deleted # 全局逻辑删除的实体字段名(配置后可以忽略不配置 @TableLogic)
+#      logic-delete-value: 1 # 逻辑已删除值(默认为 1)
+#      logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  # 配置mapper的扫描，找到所有的mapper.xml映射文件 如果和默认路径一样可以不配置
+  mapper-locations: classpath*:/mapper/**/*.xml
+  # 扫描实体类的包路径
+  typeAliasesPackage: com.example.mybatispluslearning.entity
+
+spring:
+  datasource:
+    dynamic:
+      # 没有匹配的数据源时默认匹配的数据源
+      primary: master
+      # 当没有匹配的数据源是是否采用默认的数据源,
+      # true: 严格匹配,如果没有匹配到数据源则抛出异常
+      # false(默认值):  如果没有匹配到数据源则使用默认的数据源
+      strict: false
+      datasource:
+        # 数据源的名称(名字任意)
+        master:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/votedb?autoReconnect=true&useUnicode=true&characterEncoding=utf8&useSSL=false&rewriteBatchedStatements=true
+          username: root
+          password: 8888.216
+        # 数据源的名称(名字任意)
+        slave01:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/test1?autoReconnect=true&useUnicode=true&characterEncoding=utf8&useSSL=false&rewriteBatchedStatements=true
+          username: root
+          password: 8888.216
+        # 数据源的名称(名字任意)
+        slave02:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/test2?autoReconnect=true&useUnicode=true&characterEncoding=utf8&useSSL=false&rewriteBatchedStatements=true
+          username: root
+          password: 8888.216
+
+#    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+#    url: jdbc:p6spy:mysql:///votedb?userUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+
+```
+
+- 4. 启动类:
+
+```java
+package com.example.mybatispluslearning;
+
+import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@MapperScan("com.example.mybatispluslearning.mapper")
+@SpringBootApplication
+public class MybatisPlusLearningApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(MybatisPlusLearningApplication.class, args);
+    }
+
+}
+```
+
+- 5. 实体类
+
+```java
+package com.example.mybatispluslearning.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.activerecord.Model;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@TableName("client")
+public class Client extends Model<Client> {
+    
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    private String name;
+    private String sex;
+    private Integer age;
+}
+
+
+```
+
+- 6. 编写两个Mapper
+
+```java
+package com.example.mybatispluslearning.mapper;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.example.mybatispluslearning.entity.Client;
+import org.apache.ibatis.annotations.Mapper;
+
+@DS("slave01")
+@Mapper
+public interface ClientMapperSlave01 extends BaseMapper<Client> {
+    
+}
+
+
+```
+
+```java
+package com.example.mybatispluslearning.mapper;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.example.mybatispluslearning.entity.Client;
+import org.apache.ibatis.annotations.Mapper;
+
+@DS("slave02")
+@Mapper
+public interface ClientMapperSlave02 extends BaseMapper<Client> {
+
+}
+
+```
+
+#### 示例:test03/Demo06
+
+
+```java
+
+
+```
+
+
+
 
 
 
